@@ -1,16 +1,18 @@
-// Nature AI - Chatbot JavaScript Functionality
+// Nature AI - Clean Modern Chatbot
 
 class NatureAI {
     constructor() {
-        this.apiUrl = '/api/chat'; // Will be updated based on deployment
+        this.apiUrl = '/api/chat';
         this.messages = [];
         this.isLoading = false;
         this.settings = this.loadSettings();
+        this.isOnline = false;
         
         this.initializeElements();
         this.bindEvents();
         this.loadSettings();
         this.checkFirstTimeUser();
+        this.updateStatus();
     }
 
     initializeElements() {
@@ -20,16 +22,21 @@ class NatureAI {
         this.sendButton = document.getElementById('sendButton');
         this.loadingIndicator = document.getElementById('loadingIndicator');
         
-        // Settings elements
-        this.settingsPanel = document.getElementById('settingsPanel');
-        this.settingsToggle = document.getElementById('settingsToggle');
-        this.closeSettings = document.getElementById('closeSettings');
+        // Modal elements
+        this.settingsModal = document.getElementById('settingsModal');
+        this.apiKeyBtn = document.getElementById('apiKeyBtn');
+        this.settingsBtn = document.getElementById('settingsBtn');
+        this.closeModal = document.getElementById('closeModal');
         this.saveSettings = document.getElementById('saveSettings');
         
         // Settings form elements
         this.apiKeyInput = document.getElementById('apiKey');
         this.modelSelect = document.getElementById('modelSelect');
         this.developerMessageInput = document.getElementById('developerMessage');
+        
+        // Header elements
+        this.darkModeBtn = document.getElementById('darkModeBtn');
+        this.statusIndicator = document.querySelector('.status-indicator');
     }
 
     bindEvents() {
@@ -42,21 +49,21 @@ class NatureAI {
             }
         });
 
-        // Auto-resize textarea
-        this.userInput.addEventListener('input', () => this.autoResizeTextarea());
-
-        // Settings events
-        this.settingsToggle.addEventListener('click', () => this.toggleSettings());
-        this.closeSettings.addEventListener('click', () => this.toggleSettings());
+        // Modal events
+        this.apiKeyBtn.addEventListener('click', () => this.openSettings());
+        this.settingsBtn.addEventListener('click', () => this.openSettings());
+        this.closeModal.addEventListener('click', () => this.closeSettings());
         this.saveSettings.addEventListener('click', () => this.saveSettingsToStorage());
 
-        // Close settings when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!this.settingsPanel.contains(e.target) && 
-                !this.settingsToggle.contains(e.target)) {
-                this.settingsPanel.classList.remove('open');
+        // Close modal when clicking outside
+        this.settingsModal.addEventListener('click', (e) => {
+            if (e.target === this.settingsModal) {
+                this.closeSettings();
             }
         });
+
+        // Dark mode toggle
+        this.darkModeBtn.addEventListener('click', () => this.toggleDarkMode());
 
         // Load settings when page loads
         window.addEventListener('load', () => this.populateSettingsForm());
@@ -64,9 +71,8 @@ class NatureAI {
 
     checkFirstTimeUser() {
         if (!this.settings.apiKey) {
-            // Show settings panel for first-time users
             setTimeout(() => {
-                this.toggleSettings();
+                this.openSettings();
                 this.showNotification('Welcome to Nature AI! Please enter your OpenAI API key to get started.', 'info');
             }, 1000);
         }
@@ -76,7 +82,8 @@ class NatureAI {
         const defaultSettings = {
             apiKey: '',
             model: 'gpt-4.1-mini',
-            developerMessage: 'You are Nature AI, a friendly and knowledgeable AI assistant with a deep appreciation for nature, science, and human creativity. You help users explore ideas, solve problems, and engage in meaningful conversations. Always respond in a warm, helpful manner that reflects your connection to nature.'
+            developerMessage: 'You are Nature AI, a friendly and knowledgeable AI assistant with a deep appreciation for nature, science, and human creativity. You help users explore ideas, solve problems, and engage in meaningful conversations. Always respond in a warm, helpful manner that reflects your connection to nature.',
+            darkMode: false
         };
 
         try {
@@ -92,6 +99,11 @@ class NatureAI {
         this.apiKeyInput.value = this.settings.apiKey;
         this.modelSelect.value = this.settings.model;
         this.developerMessageInput.value = this.settings.developerMessage;
+        
+        // Apply dark mode if enabled
+        if (this.settings.darkMode) {
+            document.body.classList.add('dark-mode');
+        }
     }
 
     saveSettingsToStorage() {
@@ -102,20 +114,53 @@ class NatureAI {
         try {
             localStorage.setItem('natureAI-settings', JSON.stringify(this.settings));
             this.showNotification('Settings saved successfully! 🌿', 'success');
-            this.toggleSettings();
+            this.closeSettings();
+            this.updateStatus();
         } catch (error) {
             console.error('Error saving settings:', error);
             this.showNotification('Error saving settings. Please try again.', 'error');
         }
     }
 
-    toggleSettings() {
-        this.settingsPanel.classList.toggle('open');
+    openSettings() {
+        this.settingsModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
     }
 
-    autoResizeTextarea() {
-        this.userInput.style.height = 'auto';
-        this.userInput.style.height = Math.min(this.userInput.scrollHeight, 120) + 'px';
+    closeSettings() {
+        this.settingsModal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    toggleDarkMode() {
+        this.settings.darkMode = !this.settings.darkMode;
+        document.body.classList.toggle('dark-mode', this.settings.darkMode);
+        
+        // Update button icon
+        this.darkModeBtn.innerHTML = this.settings.darkMode ? 
+            '<i class="fas fa-sun"></i>' : 
+            '<i class="fas fa-moon"></i>';
+        
+        // Save to storage
+        try {
+            localStorage.setItem('natureAI-settings', JSON.stringify(this.settings));
+        } catch (error) {
+            console.error('Error saving dark mode setting:', error);
+        }
+    }
+
+    updateStatus() {
+        if (this.settings.apiKey) {
+            this.isOnline = true;
+            this.statusIndicator.classList.remove('offline');
+            this.statusIndicator.classList.add('online');
+            this.statusIndicator.querySelector('.status-text').textContent = 'Online';
+        } else {
+            this.isOnline = false;
+            this.statusIndicator.classList.remove('online');
+            this.statusIndicator.classList.add('offline');
+            this.statusIndicator.querySelector('.status-text').textContent = 'Offline';
+        }
     }
 
     async sendMessage() {
@@ -124,15 +169,14 @@ class NatureAI {
 
         // Check if API key is configured
         if (!this.settings.apiKey) {
-            this.showNotification('Please configure your OpenAI API key in settings first.', 'warning');
-            this.toggleSettings();
+            this.showNotification('Please configure your OpenAI API key first.', 'warning');
+            this.openSettings();
             return;
         }
 
         // Add user message to chat
         this.addMessage(message, 'user');
         this.userInput.value = '';
-        this.autoResizeTextarea();
 
         // Show loading state
         this.setLoading(true);
@@ -198,7 +242,7 @@ class NatureAI {
         avatar.className = 'message-avatar';
         
         if (sender === 'bot') {
-            avatar.innerHTML = '<i class="fas fa-tree"></i>';
+            avatar.innerHTML = '<i class="fas fa-leaf"></i>';
         } else {
             avatar.innerHTML = '<i class="fas fa-user"></i>';
         }
@@ -209,7 +253,12 @@ class NatureAI {
         const messageText = document.createElement('p');
         messageText.textContent = content;
         
+        const messageTime = document.createElement('span');
+        messageTime.className = 'message-time';
+        messageTime.textContent = this.getCurrentTime();
+        
         messageContent.appendChild(messageText);
+        messageContent.appendChild(messageTime);
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(messageContent);
         
@@ -217,6 +266,15 @@ class NatureAI {
         this.scrollToBottom();
         
         return messageDiv;
+    }
+
+    getCurrentTime() {
+        const now = new Date();
+        return now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+        });
     }
 
     setLoading(loading) {
@@ -253,14 +311,16 @@ class NatureAI {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196f3'};
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
             color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             z-index: 10000;
             max-width: 400px;
             animation: slideInRight 0.3s ease-out;
+            font-size: 14px;
+            font-weight: 500;
         `;
 
         // Add animation styles
@@ -317,59 +377,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make it globally accessible for debugging
     window.natureAI = natureAI;
-});
-
-// Add some nature-inspired utility functions
-const NatureUtils = {
-    // Generate random nature emojis for fun
-    getRandomNatureEmoji() {
-        const emojis = ['🌳', '🌿', '🍃', '🌱', '🌸', '🌺', '🌻', '🌲', '🌴', '🌵', '🍀', '🌾'];
-        return emojis[Math.floor(Math.random() * emojis.length)];
-    },
-
-    // Add subtle nature sounds (optional - for future enhancement)
-    playNatureSound() {
-        // This could be implemented with Web Audio API for ambient nature sounds
-        console.log('Nature sounds could be added here for enhanced experience');
-    },
-
-    // Seasonal theme changes
-    getSeasonalTheme() {
-        const month = new Date().getMonth();
-        if (month >= 2 && month <= 4) return 'spring'; // March-May
-        if (month >= 5 && month <= 7) return 'summer'; // June-August
-        if (month >= 8 && month <= 10) return 'autumn'; // September-November
-        return 'winter'; // December-February
-    }
-};
-
-// Add some Easter eggs and fun interactions
-document.addEventListener('DOMContentLoaded', () => {
-    // Add click effect to the logo
-    const logo = document.querySelector('.logo');
-    if (logo) {
-        logo.addEventListener('click', () => {
-            const emoji = NatureUtils.getRandomNatureEmoji();
-            logo.style.transform = 'scale(1.1)';
-            setTimeout(() => logo.style.transform = 'scale(1)', 200);
-            
-            // Show a fun notification
-            if (window.natureAI) {
-                window.natureAI.showNotification(`Welcome to the forest! ${emoji}`, 'info');
-            }
-        });
-    }
-
-    // Add some interactive elements to floating leaves
-    const leaves = document.querySelectorAll('.leaf');
-    leaves.forEach(leaf => {
-        leaf.addEventListener('click', () => {
-            leaf.style.animation = 'none';
-            leaf.style.transform = 'scale(1.5) rotate(360deg)';
-            setTimeout(() => {
-                leaf.style.animation = 'float 6s ease-in-out infinite';
-                leaf.style.transform = 'scale(1) rotate(0deg)';
-            }, 1000);
-        });
-    });
 });
