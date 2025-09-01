@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nature AI - Your Natural Conversation Companion</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Nature Theme -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-tree"></i>
+                    <h1>Nature AI</h1>
+                </div>
+                <p class="tagline">Your Natural Conversation Companion</p>
+            </div>
+            <div class="floating-leaves">
+                <div class="leaf leaf-1">🍃</div>
+                <div class="leaf leaf-2">🌿</div>
+                <div class="leaf leaf-3">🍂</div>
+                <div class="leaf leaf-4">🌱</div>
+            </div>
+        </header>
+
+        <!-- Main Chat Interface -->
+        <main class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="message bot-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-tree"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>Hello! I'm Nature AI, your natural conversation companion. 🌳 I'm here to help you with any questions, creative writing, problem-solving, or just a friendly chat. What would you like to explore today?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="userInput" 
+                        placeholder="Type your message here... Let's explore nature together! 🌿"
+                        rows="1"
+                    ></textarea>
+                    <button id="sendButton" class="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <p>Powered by OpenAI • Connect with nature through AI</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button class="close-settings" id="closeSettings">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-group">
+                    <label for="apiKey">OpenAI API Key:</label>
+                    <input 
+                        type="password" 
+                        id="apiKey" 
+                        placeholder="Enter your OpenAI API key"
+                    >
+                    <small>Your API key is stored locally and never shared</small>
+                </div>
+                <div class="setting-group">
+                    <label for="modelSelect">AI Model:</label>
+                    <select id="modelSelect">
+                        <option value="gpt-4.1-mini">GPT-4.1 Mini (Recommended)</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="developerMessage">System Context:</label>
+                    <textarea 
+                        id="developerMessage" 
+                        placeholder="You are Nature AI, a friendly and knowledgeable AI assistant with a deep appreciation for nature, science, and human creativity. You help users explore ideas, solve problems, and engage in meaningful conversations."
+                        rows="3"
+                    ></textarea>
+                </div>
+                <button class="save-settings" id="saveSettings">Save Settings</button>
+            </div>
+        </div>
+
+        <!-- Settings Toggle Button -->
+        <button class="settings-toggle" id="settingsToggle">
+            <i class="fas fa-cog"></i>
+        </button>
+
+        <!-- Loading Indicator -->
+        <div class="loading-indicator" id="loadingIndicator">
+            <div class="loading-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <p>Nature AI is thinking...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
