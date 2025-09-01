@@ -310,9 +310,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         natureAI.updateApiUrl('http://localhost:8000/api/chat');
     }
-    // For Vercel deployment, use relative path
+    // For Vercel deployment, use the production API URL
     else {
-        natureAI.updateApiUrl('/api/chat');
+        natureAI.updateApiUrl('https://api-m3skopw3v-bhzbgold-2840s-projects.vercel.app/api/chat');
     }
     
     // Make it globally accessible for debugging
