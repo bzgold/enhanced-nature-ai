@@ -376,10 +376,14 @@ class EnhancedNatureAI {
             });
 
             // Parse and update side panel with reasoning and questions
-            const { reasoning, questions } = this.parseMessageContent(botMessage);
+            const { reasoning, questions, mainContent } = this.parseMessageContent(botMessage);
             this.updateSidePanel(reasoning, questions);
             
-            // Main content stays completely natural - no modifications needed
+            // Update the main message content with cleaned structured content
+            if (mainContent && mainContent !== botMessage) {
+                const formattedMainContent = this.formatEnhancedMessage(mainContent);
+                botMessageElement.querySelector('.message-content p').innerHTML = formattedMainContent;
+            }
 
             // Save conversation history
             this.saveConversationHistory();
@@ -441,10 +445,18 @@ class EnhancedNatureAI {
     }
 
     formatEnhancedMessage(content) {
-        // Completely natural formatting - just convert line breaks
+        // Enhanced formatting for structured AI responses
         let formatted = content
-            // Convert line breaks to <br> for natural paragraph flow
+            // Convert line breaks to <br>
             .replace(/\n/g, '<br>')
+            // Format headings (lines that are all caps or start with capital letters and end with :)
+            .replace(/^([A-Z][A-Z\s]+:?)$/gm, '<br><strong style="color: #059669; font-size: 1.1em; display: block; margin: 1rem 0 0.5rem 0;">$1</strong>')
+            // Format numbered lists
+            .replace(/^(\d+\.\s)/gm, '<br><strong style="color: #3b82f6;">$1</strong>')
+            // Format bullet points
+            .replace(/^[-•]\s/gm, '<br>• <span style="color: #059669;">')
+            // Format confidence indicators
+            .replace(/\(Confidence: [\d.]+\)/g, '<span style="color: #f59e0b; font-weight: 600;">$&</span>')
             // Clean up multiple line breaks
             .replace(/(<br>){3,}/g, '<br><br>')
             // Remove leading <br> tags
@@ -524,43 +536,37 @@ class EnhancedNatureAI {
     }
 
     parseMessageContent(content) {
-        // Extract reasoning and follow-up questions from natural AI response
+        // Extract reasoning and follow-up questions from structured AI response
         let reasoning = null;
         let questions = [];
         
-        // Look for confidence indicators or reasoning patterns in natural language
-        const confidencePatterns = [
-            /I'm (?:fairly|quite|very|pretty) confident/gi,
-            /I'm not (?:entirely|completely) sure/gi,
-            /Based on (?:what I know|my knowledge)/gi,
-            /I believe this because/gi,
-            /This is likely because/gi
-        ];
-        
-        for (const pattern of confidencePatterns) {
-            const match = content.match(pattern);
-            if (match) {
-                reasoning = `The AI expressed confidence level: ${match[0]}`;
-                break;
-            }
+        // Look for reasoning sections in structured responses
+        const reasoningMatch = content.match(/REASONING:?\s*([\s\S]*?)(?=FOLLOW-UP QUESTIONS:|$)/i);
+        if (reasoningMatch) {
+            reasoning = reasoningMatch[1].trim();
         }
         
-        // Look for sentences ending with "?" - these are likely follow-up questions
-        const sentences = content.split(/[.!]/);
-        questions = sentences
-            .filter(sentence => sentence.trim().includes('?'))
-            .map(q => q.trim().replace(/^\s*[-•]\s*/, '')) // Remove bullet points
-            .filter(q => q.length > 15 && q.length < 200) // Filter reasonable question lengths
-            .slice(-3); // Take the last 3 questions (most likely follow-ups)
+        // Look for follow-up questions sections
+        const questionsMatch = content.match(/FOLLOW-UP QUESTIONS:?\s*([\s\S]*?)$/i);
+        if (questionsMatch) {
+            const questionsText = questionsMatch[1].trim();
+            questions = questionsText
+                .split(/\n/)
+                .map(q => q.replace(/^\d+\.\s*/, '').replace(/^[-•]\s*/, '').trim())
+                .filter(q => q.length > 0 && q.includes('?'));
+        }
         
-        // Clean up questions
-        questions = questions.map(q => {
-            // Remove common question starters that might be redundant
-            return q.replace(/^(so|and|but|well|now|okay|alright),?\s*/i, '').trim();
-        }).filter(q => q.length > 0);
+        // Remove reasoning and questions sections from main content for cleaner display
+        let mainContent = content
+            .replace(/REASONING:?\s*[\s\S]*?(?=FOLLOW-UP QUESTIONS:|$)/gi, '')
+            .replace(/FOLLOW-UP QUESTIONS:?\s*[\s\S]*$/gi, '')
+            .trim();
         
-        // Main content is the full response - no need to modify it
-        let mainContent = content;
+        // Clean up the main content
+        mainContent = mainContent
+            .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
+            .replace(/^\s+|\s+$/g, '') // Trim whitespace
+            .replace(/\n+/g, '\n'); // Clean up line breaks
         
         return { reasoning, questions, mainContent };
     }

@@ -39,30 +39,32 @@ async def enhanced_chat(request: EnhancedChatRequest):
         # Initialize OpenAI client with the provided API key
         client = OpenAI(api_key=request.api_key)
         
-        # Enhanced system prompt with completely natural conversation flow
+        # Enhanced system prompt with structured responses and separate analysis
         enhanced_system_prompt = f"""{request.developer_message}
 
 CRITICAL RESPONSE GUIDELINES:
-1. COMPLETELY NATURAL: Respond like a knowledgeable friend having a conversation
-2. NO STRUCTURED FORMATTING: No headers, no "KEY POINTS:", no formal structure
-3. PLAIN TEXT ONLY: Just natural flowing text with normal punctuation
-4. UNCERTAINTY: If unsure, say "I don't know" or "I'm not certain about this"
-5. MEMORY: Build upon previous conversation context naturally
-6. CONFIDENCE: Mention your confidence level naturally in the conversation
-7. FOLLOW-UP QUESTIONS: End with 2-3 natural questions that flow from your response
+1. STRUCTURED RESPONSES: Use clear headings, bullet points, and numbered steps in main response
+2. FORMATTING: Use plain text only - NO markdown formatting
+3. UNCERTAINTY: If unsure, say "I don't know" or "I'm not certain about this"
+4. MEMORY: Build upon previous conversation context
+5. ENGAGEMENT: Include structured content with clear organization
 
 CONVERSATION CONTEXT: {request.conversation_history if request.conversation_history else "This is the start of our conversation."}
 
-RESPONSE STYLE:
-- Write like you're explaining something to a friend over coffee
-- Use natural language and conversational tone
-- Include reasoning and confidence naturally in your explanation
-- End with questions that feel natural to ask next
-- No bullet points, no numbered lists, no formal structure
+RESPONSE STRUCTURE TEMPLATE:
+HEADING: [Main topic]
+• Key point 1
+• Key point 2
+• Key point 3
 
-EXAMPLE GOOD RESPONSE: "That's a fascinating question! Based on what I know, [natural explanation]. I'm fairly confident about this because [reasoning]. What made you curious about this? Have you encountered this before?"
+SUPPORTING DETAILS:
+• Additional information
+• Examples or explanations
 
-IMPORTANT: Write ONE flowing response that feels completely natural and conversational."""
+CONCLUSION:
+[Summary and next steps]
+
+IMPORTANT: Provide structured, organized responses in the main chat. The reasoning and follow-up questions will be handled separately in the analysis panel."""
         
         # Build comprehensive message history
         messages = [{"role": "system", "content": enhanced_system_prompt}]
