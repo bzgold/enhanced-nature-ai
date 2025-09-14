@@ -426,10 +426,28 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    margin-bottom: 0.75rem;
 }
 
 .save-settings:hover {
     background: var(--secondary-green);
+}
+
+.clear-conversation {
+    width: 100%;
+    padding: 0.875rem;
+    background: #dc2626;
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-conversation:hover {
+    background: #b91c1c;
 }
 
 /* Loading Indicator */

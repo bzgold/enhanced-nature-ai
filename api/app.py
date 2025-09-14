@@ -28,6 +28,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     developer_message: str  # Message from the developer/system
     user_message: str      # Message from the user
+    conversation_history: Optional[list] = []  # Previous conversation context
     model: Optional[str] = "gpt-4o-mini"  # Optional model selection with default
     api_key: str          # OpenAI API key for authentication
 
@@ -38,16 +39,42 @@ async def chat(request: ChatRequest):
         # Initialize OpenAI client with the provided API key
         client = OpenAI(api_key=request.api_key)
         
+        # Enhanced system prompt with all requirements
+        enhanced_system_prompt = f"""{request.developer_message}
+
+IMPORTANT RESPONSE GUIDELINES:
+1. ALWAYS use structured responses with clear headings, bullet points, and numbered steps
+2. NEVER use markdown formatting - use plain text only
+3. If you don't know something or are uncertain, say "I don't know" or "I'm not certain about this"
+4. Include your reasoning process and confidence level when appropriate
+5. ALWAYS end with 2-3 engaging follow-up questions to continue the conversation
+6. Remember previous conversation context and build upon it
+7. Use clean, readable formatting with proper spacing and structure
+
+CONVERSATION HISTORY: {request.conversation_history if request.conversation_history else "This is the start of our conversation."}"""
+        
+        # Build message history including conversation context
+        messages = [{"role": "system", "content": enhanced_system_prompt}]
+        
+        # Add conversation history if provided
+        if request.conversation_history:
+            for msg in request.conversation_history[-10:]:  # Limit to last 10 messages for memory efficiency
+                messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+        
+        # Add current user message
+        messages.append({"role": "user", "content": request.user_message})
+        
         # Create an async generator function for streaming responses
         async def generate():
-            # Create a streaming chat completion request
+            # Create a streaming chat completion request with enhanced parameters
             stream = client.chat.completions.create(
                 model=request.model,
-                messages=[
-                    {"role": "developer", "content": request.developer_message},
-                    {"role": "user", "content": request.user_message}
-                ],
-                stream=True  # Enable streaming response
+                messages=messages,
+                stream=True,  # Enable streaming response
+                temperature=0.7,  # Balance creativity and accuracy
+                max_tokens=1000,  # Reasonable response length
+                presence_penalty=0.1,  # Encourage diverse responses
+                frequency_penalty=0.1   # Reduce repetition
             )
             
             # Yield each chunk of the response as it becomes available

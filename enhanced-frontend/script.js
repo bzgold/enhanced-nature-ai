@@ -1,13 +1,15 @@
-// Nature AI - Clean Modern Chatbot
+// Enhanced Nature AI - Advanced Chatbot with Memory & Reasoning
 
-class NatureAI {
+class EnhancedNatureAI {
     constructor() {
-        this.apiUrl = '/api/chat';
+        this.apiUrl = 'http://localhost:8001/api/chat';  // Enhanced API endpoint
         this.messages = [];
         this.conversationHistory = this.loadConversationHistory();
         this.isLoading = false;
         this.settings = this.loadSettings();
         this.isOnline = false;
+        this.sessionStartTime = Date.now();
+        this.totalMessages = 0;
         
         this.initializeElements();
         this.bindEvents();
@@ -15,6 +17,7 @@ class NatureAI {
         this.checkFirstTimeUser();
         this.updateStatus();
         this.loadConversationFromHistory();
+        this.startStatsTimer();
     }
 
     initializeElements() {
@@ -35,11 +38,27 @@ class NatureAI {
         this.apiKeyInput = document.getElementById('apiKey');
         this.modelSelect = document.getElementById('modelSelect');
         this.developerMessageInput = document.getElementById('developerMessage');
+        this.confidenceThreshold = document.getElementById('confidenceThreshold');
+        this.confidenceValue = document.getElementById('confidenceValue');
+        this.enableReasoning = document.getElementById('enableReasoning');
         this.clearConversationBtn = document.getElementById('clearConversation');
+        this.exportConversationBtn = document.getElementById('exportConversation');
+        
+        // Side panel elements
+        this.sidePanel = document.getElementById('sidePanel');
+        this.togglePanel = document.getElementById('togglePanel');
+        this.reasoningContent = document.getElementById('reasoningContent');
+        this.questionsContent = document.getElementById('questionsContent');
         
         // Header elements
         this.darkModeBtn = document.getElementById('darkModeBtn');
         this.statusIndicator = document.querySelector('.status-indicator');
+        this.memoryCount = document.getElementById('memoryCount');
+        
+        // Stats elements
+        this.totalMessagesEl = document.getElementById('totalMessages');
+        this.memoryUsageEl = document.getElementById('memoryUsage');
+        this.sessionTimeEl = document.getElementById('sessionTime');
     }
 
     bindEvents() {
@@ -58,6 +77,10 @@ class NatureAI {
         this.closeModal.addEventListener('click', () => this.closeSettings());
         this.saveSettings.addEventListener('click', () => this.saveSettingsToStorage());
         this.clearConversationBtn.addEventListener('click', () => this.clearConversationHistory());
+        this.exportConversationBtn.addEventListener('click', () => this.exportConversation());
+        
+        // Side panel events
+        this.togglePanel.addEventListener('click', () => this.toggleSidePanel());
 
         // Close modal when clicking outside
         this.settingsModal.addEventListener('click', (e) => {
@@ -69,6 +92,11 @@ class NatureAI {
         // Dark mode toggle
         this.darkModeBtn.addEventListener('click', () => this.toggleDarkMode());
 
+        // Confidence threshold slider
+        this.confidenceThreshold.addEventListener('input', (e) => {
+            this.confidenceValue.textContent = e.target.value;
+        });
+
         // Load settings when page loads
         window.addEventListener('load', () => this.populateSettingsForm());
     }
@@ -77,8 +105,8 @@ class NatureAI {
         if (!this.settings.apiKey) {
             setTimeout(() => {
                 this.openSettings();
-                this.showNotification('Welcome to Nature AI! Please enter your OpenAI API key to get started.', 'info');
-            }, 1000);
+                this.showNotification('Welcome to Enhanced Nature AI! 🧠 Please enter your OpenAI API key to unlock advanced features.', 'info');
+            }, 1500);
         }
     }
 
@@ -86,46 +114,49 @@ class NatureAI {
         const defaultSettings = {
             apiKey: '',
             model: 'gpt-4o-mini',
-            developerMessage: 'You are Nature AI, a friendly and knowledgeable AI assistant with a deep appreciation for nature, science, and human creativity. You help users explore ideas, solve problems, and engage in meaningful conversations. Always respond in a warm, helpful manner that reflects your connection to nature.',
-            darkMode: false
+            developerMessage: 'You are Enhanced Nature AI, an advanced conversational AI with memory, reasoning, and structured response capabilities. You provide transparent, engaging, and helpful responses while building upon conversation context.',
+            darkMode: false,
+            enableReasoning: true,
+            confidenceThreshold: 0.7
         };
 
         try {
-            const saved = localStorage.getItem('natureAI-settings');
+            const saved = localStorage.getItem('enhancedNatureAI-settings');
             return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
         } catch (error) {
-            console.error('Error loading settings:', error);
+            console.error('Error loading enhanced settings:', error);
             return defaultSettings;
         }
     }
 
     loadConversationHistory() {
         try {
-            const saved = localStorage.getItem('natureAI-conversation');
+            const saved = localStorage.getItem('enhancedNatureAI-conversation');
             return saved ? JSON.parse(saved) : [];
         } catch (error) {
-            console.error('Error loading conversation history:', error);
+            console.error('Error loading enhanced conversation history:', error);
             return [];
         }
     }
 
     saveConversationHistory() {
         try {
-            localStorage.setItem('natureAI-conversation', JSON.stringify(this.conversationHistory));
+            localStorage.setItem('enhancedNatureAI-conversation', JSON.stringify(this.conversationHistory));
+            this.updateMemoryStats();
         } catch (error) {
-            console.error('Error saving conversation history:', error);
+            console.error('Error saving enhanced conversation history:', error);
         }
     }
 
     loadConversationFromHistory() {
         if (this.conversationHistory.length > 0) {
-            // Clear the default welcome message
-            this.chatMessages.innerHTML = '';
-            
             // Load previous messages
             this.conversationHistory.forEach(msg => {
                 this.addMessage(msg.content, msg.role, false, false);
             });
+            
+            this.totalMessages = this.conversationHistory.length;
+            this.updateStats();
         }
     }
 
@@ -133,17 +164,53 @@ class NatureAI {
         this.conversationHistory = [];
         this.saveConversationHistory();
         this.chatMessages.innerHTML = '';
-        this.addMessage('Hello! I\'m Nature AI, your natural conversation companion. 🌳 I\'m here to help you with any questions, creative writing, problem-solving, or just a friendly chat. What would you like to explore today?', 'bot');
+        this.totalMessages = 0;
+        this.updateStats();
+        this.clearSidePanel();
+        this.showNotification('Conversation memory cleared! 🧹', 'success');
+    }
+
+    exportConversation() {
+        try {
+            const conversationData = {
+                timestamp: new Date().toISOString(),
+                totalMessages: this.conversationHistory.length,
+                conversation: this.conversationHistory,
+                settings: this.settings
+            };
+            
+            const blob = new Blob([JSON.stringify(conversationData, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `enhanced-nature-ai-conversation-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showNotification('Conversation exported successfully! 📁', 'success');
+        } catch (error) {
+            console.error('Error exporting conversation:', error);
+            this.showNotification('Error exporting conversation', 'error');
+        }
     }
 
     populateSettingsForm() {
         this.apiKeyInput.value = this.settings.apiKey;
         this.modelSelect.value = this.settings.model;
         this.developerMessageInput.value = this.settings.developerMessage;
+        this.confidenceThreshold.value = this.settings.confidenceThreshold;
+        this.confidenceValue.textContent = this.settings.confidenceThreshold;
+        this.enableReasoning.checked = this.settings.enableReasoning;
         
         // Apply dark mode if enabled
         if (this.settings.darkMode) {
             document.body.classList.add('dark-mode');
+            this.darkModeBtn.innerHTML = '<i class="fas fa-sun"></i>';
         }
     }
 
@@ -151,14 +218,16 @@ class NatureAI {
         this.settings.apiKey = this.apiKeyInput.value.trim();
         this.settings.model = this.modelSelect.value;
         this.settings.developerMessage = this.developerMessageInput.value.trim();
+        this.settings.confidenceThreshold = parseFloat(this.confidenceThreshold.value);
+        this.settings.enableReasoning = this.enableReasoning.checked;
 
         try {
-            localStorage.setItem('natureAI-settings', JSON.stringify(this.settings));
-            this.showNotification('Settings saved successfully! 🌿', 'success');
+            localStorage.setItem('enhancedNatureAI-settings', JSON.stringify(this.settings));
+            this.showNotification('Enhanced settings saved successfully! 🧠✨', 'success');
             this.closeSettings();
             this.updateStatus();
         } catch (error) {
-            console.error('Error saving settings:', error);
+            console.error('Error saving enhanced settings:', error);
             this.showNotification('Error saving settings. Please try again.', 'error');
         }
     }
@@ -184,7 +253,7 @@ class NatureAI {
         
         // Save to storage
         try {
-            localStorage.setItem('natureAI-settings', JSON.stringify(this.settings));
+            localStorage.setItem('enhancedNatureAI-settings', JSON.stringify(this.settings));
         } catch (error) {
             console.error('Error saving dark mode setting:', error);
         }
@@ -195,13 +264,32 @@ class NatureAI {
             this.isOnline = true;
             this.statusIndicator.classList.remove('offline');
             this.statusIndicator.classList.add('online');
-            this.statusIndicator.querySelector('.status-text').textContent = 'Online';
+            this.statusIndicator.querySelector('.status-text').textContent = 'Enhanced Online';
         } else {
             this.isOnline = false;
             this.statusIndicator.classList.remove('online');
             this.statusIndicator.classList.add('offline');
             this.statusIndicator.querySelector('.status-text').textContent = 'Offline';
         }
+        this.updateMemoryStats();
+    }
+
+    updateMemoryStats() {
+        const memorySize = JSON.stringify(this.conversationHistory).length;
+        this.memoryCount.textContent = this.conversationHistory.length;
+        this.memoryUsageEl.textContent = Math.round(memorySize / 1024);
+    }
+
+    updateStats() {
+        this.totalMessagesEl.textContent = this.totalMessages;
+        this.updateMemoryStats();
+    }
+
+    startStatsTimer() {
+        setInterval(() => {
+            const sessionTime = Math.round((Date.now() - this.sessionStartTime) / 60000);
+            this.sessionTimeEl.textContent = `${sessionTime}m`;
+        }, 1000);
     }
 
     async sendMessage() {
@@ -210,7 +298,7 @@ class NatureAI {
 
         // Check if API key is configured
         if (!this.settings.apiKey) {
-            this.showNotification('Please configure your OpenAI API key first.', 'warning');
+            this.showNotification('Please configure your OpenAI API key first to use Enhanced Nature AI.', 'warning');
             this.openSettings();
             return;
         }
@@ -230,16 +318,18 @@ class NatureAI {
                 timestamp: new Date().toISOString()
             });
 
-            // Prepare request payload with conversation history
+            // Prepare enhanced request payload
             const payload = {
                 developer_message: this.settings.developerMessage,
                 user_message: message,
                 conversation_history: this.conversationHistory.slice(-20), // Send last 20 messages for context
                 model: this.settings.model,
-                api_key: this.settings.apiKey
+                api_key: this.settings.apiKey,
+                enable_reasoning: this.settings.enableReasoning,
+                confidence_threshold: this.settings.confidenceThreshold
             };
 
-            // Make API request
+            // Make API request to enhanced backend
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: {
@@ -267,8 +357,8 @@ class NatureAI {
                 const chunk = decoder.decode(value);
                 botMessage += chunk;
 
-                // Update bot message content with improved formatting
-                const formattedMessage = this.formatMessage(botMessage);
+                // Update bot message content with enhanced formatting
+                const formattedMessage = this.formatEnhancedMessage(botMessage);
                 botMessageElement.querySelector('.message-content p').innerHTML = formattedMessage;
                 this.scrollToBottom();
             }
@@ -280,15 +370,24 @@ class NatureAI {
                 timestamp: new Date().toISOString()
             });
 
+            // Parse and update side panel with reasoning and questions
+            const { reasoning, questions } = this.parseMessageContent(botMessage);
+            this.updateSidePanel(reasoning, questions);
+
             // Save conversation history
             this.saveConversationHistory();
+            this.totalMessages++;
+            this.updateStats();
+            
+            // Auto-scroll to bottom after a short delay to ensure content is rendered
+            setTimeout(() => this.scrollToBottom(), 100);
 
         } catch (error) {
             console.error('Error sending message:', error);
-            this.showNotification('Error connecting to Nature AI. Please check your API key and try again.', 'error');
+            this.showNotification('Error connecting to Enhanced Nature AI. Please check your API key and try again.', 'error');
             
             // Add error message to chat
-            this.addMessage('Sorry, I encountered an error. Please check your API key and try again.', 'bot');
+            this.addMessage('Sorry, I encountered an error. Please check your API key and try again. Enhanced Nature AI is designed to be more reliable and transparent.', 'bot');
         } finally {
             this.setLoading(false);
         }
@@ -296,13 +395,13 @@ class NatureAI {
 
     addMessage(content, sender, isStreaming = false, saveToHistory = true) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}-message`;
+        messageDiv.className = `message ${sender}-message enhanced`;
         
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
         
         if (sender === 'bot') {
-            avatar.innerHTML = '<i class="fas fa-leaf"></i>';
+            avatar.innerHTML = '<i class="fas fa-brain"></i>';
         } else {
             avatar.innerHTML = '<i class="fas fa-user"></i>';
         }
@@ -314,7 +413,7 @@ class NatureAI {
         
         // Format message content appropriately
         if (sender === 'bot' && !isStreaming) {
-            messageText.innerHTML = this.formatMessage(content);
+            messageText.innerHTML = this.formatEnhancedMessage(content);
         } else {
             messageText.textContent = content;
         }
@@ -334,19 +433,25 @@ class NatureAI {
         return messageDiv;
     }
 
-    formatMessage(content) {
-        // Convert plain text formatting to HTML for better display
-        let formatted = content
+    formatEnhancedMessage(content) {
+        // Remove reasoning and follow-up questions sections from main display
+        let cleanContent = content
+            .replace(/REASONING:?\s*[\s\S]*?(?=FOLLOW-UP QUESTIONS:|$)/gi, '')
+            .replace(/FOLLOW-UP QUESTIONS:?\s*[\s\S]*$/gi, '')
+            .trim();
+        
+        // Enhanced formatting for structured AI responses
+        let formatted = cleanContent
             // Convert line breaks to <br>
             .replace(/\n/g, '<br>')
-            // Convert numbered lists (1. 2. etc.)
-            .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
-            // Convert bullet points (- or •)
-            .replace(/^[-•]\s/gm, '<br>• ')
-            // Convert section headers (lines that are all caps or start with capital letters)
-            .replace(/^([A-Z][A-Z\s]+:?)$/gm, '<br><strong style="color: #059669; font-size: 1.1em;">$1</strong><br>')
-            // Convert questions (lines ending with ?)
-            .replace(/^(.+\?)$/gm, '<br><em style="color: #7c3aed; font-weight: 500;">$1</em><br>')
+            // Format headings (lines that are all caps or start with capital letters and end with :)
+            .replace(/^([A-Z][A-Z\s]+:?)$/gm, '<br><strong style="color: #059669; font-size: 1.1em; display: block; margin: 1rem 0 0.5rem 0;">$1</strong>')
+            // Format numbered lists
+            .replace(/^(\d+\.\s)/gm, '<br><strong style="color: #3b82f6;">$1</strong>')
+            // Format bullet points
+            .replace(/^[-•]\s/gm, '<br>• <span style="color: #059669;">')
+            // Format confidence indicators
+            .replace(/\(Confidence: [\d.]+\)/g, '<span style="color: #f59e0b; font-weight: 600;">$&</span>')
             // Clean up multiple line breaks
             .replace(/(<br>){3,}/g, '<br><br>')
             // Remove leading <br> tags
@@ -371,7 +476,7 @@ class NatureAI {
         
         if (loading) {
             this.loadingIndicator.classList.add('show');
-            this.sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.sendButton.innerHTML = '<i class="fas fa-brain fa-spin"></i>';
         } else {
             this.loadingIndicator.classList.remove('show');
             this.sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
@@ -382,8 +487,53 @@ class NatureAI {
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
 
+    toggleSidePanel() {
+        this.sidePanel.classList.toggle('collapsed');
+        const isCollapsed = this.sidePanel.classList.contains('collapsed');
+        this.togglePanel.querySelector('i').className = isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+    }
+
+    updateSidePanel(reasoning, questions) {
+        if (reasoning) {
+            this.reasoningContent.innerHTML = `<p>${reasoning}</p>`;
+        }
+        
+        if (questions && questions.length > 0) {
+            const questionsHtml = questions.map(q => `<p>• ${q}</p>`).join('');
+            this.questionsContent.innerHTML = questionsHtml;
+        }
+    }
+
+    clearSidePanel() {
+        this.reasoningContent.innerHTML = '<p class="no-content">No reasoning available yet</p>';
+        this.questionsContent.innerHTML = '<p class="no-content">No questions available yet</p>';
+    }
+
+    parseMessageContent(content) {
+        // Extract reasoning and follow-up questions from AI response
+        const reasoningMatch = content.match(/REASONING:?\s*([\s\S]*?)(?=FOLLOW-UP QUESTIONS:|$)/i);
+        const questionsMatch = content.match(/FOLLOW-UP QUESTIONS:?\s*([\s\S]*?)$/i);
+        
+        let reasoning = null;
+        let questions = [];
+        
+        if (reasoningMatch) {
+            reasoning = reasoningMatch[1].trim();
+        }
+        
+        if (questionsMatch) {
+            const questionsText = questionsMatch[1].trim();
+            questions = questionsText
+                .split(/\n/)
+                .map(q => q.replace(/^\d+\.\s*/, '').replace(/^[-•]\s*/, '').trim())
+                .filter(q => q.length > 0 && q.includes('?'));
+        }
+        
+        return { reasoning, questions };
+    }
+
     showNotification(message, type = 'info') {
-        // Create notification element
+        // Create enhanced notification element
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.innerHTML = `
@@ -393,15 +543,15 @@ class NatureAI {
             </div>
         `;
 
-        // Add styles
+        // Add enhanced styles
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#dc2626' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
             color: white;
             padding: 12px 16px;
-            border-radius: 8px;
+            border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             z-index: 10000;
             max-width: 400px;
@@ -448,20 +598,19 @@ class NatureAI {
     }
 }
 
-// Initialize Nature AI when DOM is loaded
+// Initialize Enhanced Nature AI when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const natureAI = new NatureAI();
+    const enhancedNatureAI = new EnhancedNatureAI();
     
     // Update API URL based on environment
-    // For local development, use the FastAPI backend
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        natureAI.updateApiUrl('http://localhost:8000/api/chat');
+        enhancedNatureAI.updateApiUrl('http://localhost:8001/api/chat');
     }
-    // For Vercel deployment, use the production API URL
+    // For production deployment
     else {
-        natureAI.updateApiUrl('https://api-m3skopw3v-bhzbgold-2840s-projects.vercel.app/api/chat');
+        enhancedNatureAI.updateApiUrl('https://your-enhanced-api.vercel.app/api/chat');
     }
     
     // Make it globally accessible for debugging
-    window.natureAI = natureAI;
+    window.enhancedNatureAI = enhancedNatureAI;
 });

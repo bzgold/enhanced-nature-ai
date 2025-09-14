@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nature AI (Enhanced) - Your Advanced Conversation Companion</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Enhanced Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon enhanced">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>Nature AI (Enhanced)</h1>
+                        <p class="powered-by">Powered by Advanced GPT-4o-mini with Memory & Reasoning</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="status-indicator offline">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Offline</span>
+                </div>
+                
+                <div class="memory-indicator">
+                    <i class="fas fa-memory"></i>
+                    <span id="memoryCount">0</span>
+                </div>
+                
+                <button class="header-btn dark-mode-btn" id="darkModeBtn">
+                    <i class="fas fa-moon"></i>
+                </button>
+                
+                <button class="header-btn api-key-btn" id="apiKeyBtn">
+                    <i class="fas fa-key"></i>
+                    <span>API Key</span>
+                </button>
+                
+                <button class="header-btn settings-btn" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Enhanced Main Chat Area -->
+        <main class="chat-area">
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Messages will be added here dynamically -->
+                </div>
+                
+                <!-- Side Panel for Reasoning and Follow-up Questions -->
+                <div class="side-panel" id="sidePanel">
+                    <div class="side-panel-header">
+                        <h3>🧠 AI Analysis</h3>
+                        <button class="toggle-panel" id="togglePanel">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="side-panel-content">
+                        <div class="analysis-section">
+                            <h4>Reasoning Process</h4>
+                            <div id="reasoningContent" class="analysis-content">
+                                <p class="no-content">No reasoning available yet</p>
+                            </div>
+                        </div>
+                        <div class="analysis-section">
+                            <h4>Follow-up Questions</h4>
+                            <div id="questionsContent" class="analysis-content">
+                                <p class="no-content">No questions available yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Enhanced Input Area -->
+        <div class="input-area">
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Ask me anything - I'll provide structured, reasoned responses with follow-up questions..."
+                    class="message-input"
+                >
+                <button id="sendButton" class="send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="input-features">
+                <span class="feature-badge">🧠 Memory Enabled</span>
+                <span class="feature-badge">🤔 Reasoning Active</span>
+                <span class="feature-badge">📝 Structured Responses</span>
+            </div>
+        </div>
+
+        <!-- Enhanced Settings Modal -->
+        <div class="modal-overlay" id="settingsModal">
+            <div class="modal enhanced-modal">
+                <div class="modal-header">
+                    <h3>Enhanced Settings</h3>
+                    <button class="close-modal" id="closeModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-content">
+                    <div class="setting-group">
+                        <label for="apiKey">OpenAI API Key</label>
+                        <input 
+                            type="password" 
+                            id="apiKey" 
+                            placeholder="Enter your OpenAI API key"
+                            class="setting-input"
+                        >
+                        <small>Your API key is stored locally and never shared</small>
+                    </div>
+                    <div class="setting-group">
+                        <label for="modelSelect">AI Model</label>
+                        <select id="modelSelect" class="setting-input">
+                            <option value="gpt-4o-mini">GPT-4o Mini (Enhanced Recommended)</option>
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label for="developerMessage">System Context</label>
+                        <textarea 
+                            id="developerMessage" 
+                            placeholder="You are Enhanced Nature AI, an advanced conversational AI with memory, reasoning, and structured response capabilities. You provide transparent, engaging, and helpful responses while building upon conversation context."
+                            rows="3"
+                            class="setting-input"
+                        ></textarea>
+                    </div>
+                    <div class="setting-group">
+                        <label for="confidenceThreshold">Confidence Threshold</label>
+                        <input 
+                            type="range" 
+                            id="confidenceThreshold" 
+                            min="0.1" 
+                            max="1.0" 
+                            step="0.1" 
+                            value="0.7"
+                            class="setting-range"
+                        >
+                        <span id="confidenceValue">0.7</span>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="enableReasoning" checked>
+                            Enable Chain of Thought Reasoning
+                        </label>
+                    </div>
+                    <button class="save-settings" id="saveSettings">Save Enhanced Settings</button>
+                    <button class="clear-conversation" id="clearConversation">Clear Conversation Memory</button>
+                    <button class="export-conversation" id="exportConversation">Export Conversation</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Loading Indicator -->
+        <div class="loading-indicator" id="loadingIndicator">
+            <div class="loading-spinner enhanced">
+                <i class="fas fa-brain fa-spin"></i>
+            </div>
+            <p>Enhanced Nature AI is thinking and reasoning...</p>
+        </div>
+
+        <!-- Conversation Stats Panel -->
+        <div class="stats-panel" id="statsPanel">
+            <div class="stat-item">
+                <i class="fas fa-comments"></i>
+                <span>Messages: <span id="totalMessages">0</span></span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-memory"></i>
+                <span>Memory: <span id="memoryUsage">0</span>KB</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-clock"></i>
+                <span>Session: <span id="sessionTime">0m</span></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
