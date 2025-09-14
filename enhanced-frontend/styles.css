@@ -177,6 +177,11 @@ body {
     transform: translateY(-1px);
 }
 
+.reasoning-panel-btn.active {
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
 /* Enhanced Chat Area */
 .chat-area {
     flex: 1;

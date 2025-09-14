@@ -53,6 +53,7 @@ class EnhancedNatureAI {
         
         // Header elements
         this.darkModeBtn = document.getElementById('darkModeBtn');
+        this.reasoningPanelBtn = document.getElementById('reasoningPanelBtn');
         this.statusIndicator = document.querySelector('.status-indicator');
         this.memoryCount = document.getElementById('memoryCount');
         
@@ -92,6 +93,9 @@ class EnhancedNatureAI {
 
         // Dark mode toggle
         this.darkModeBtn.addEventListener('click', () => this.toggleDarkMode());
+
+        // Reasoning panel toggle
+        this.reasoningPanelBtn.addEventListener('click', () => this.toggleSidePanel());
 
         // Confidence threshold slider
         this.confidenceThreshold.addEventListener('input', (e) => {
@@ -372,14 +376,10 @@ class EnhancedNatureAI {
             });
 
             // Parse and update side panel with reasoning and questions
-            const { reasoning, questions, mainContent } = this.parseMessageContent(botMessage);
+            const { reasoning, questions } = this.parseMessageContent(botMessage);
             this.updateSidePanel(reasoning, questions);
             
-            // Update the main message content to be natural
-            if (mainContent && mainContent !== botMessage) {
-                const formattedMainContent = this.formatEnhancedMessage(mainContent);
-                botMessageElement.querySelector('.message-content p').innerHTML = formattedMainContent;
-            }
+            // Main content stays completely natural - no modifications needed
 
             // Save conversation history
             this.saveConversationHistory();
@@ -441,16 +441,10 @@ class EnhancedNatureAI {
     }
 
     formatEnhancedMessage(content) {
-        // Natural formatting for conversational AI responses
+        // Completely natural formatting - just convert line breaks
         let formatted = content
-            // Convert line breaks to <br>
+            // Convert line breaks to <br> for natural paragraph flow
             .replace(/\n/g, '<br>')
-            // Format bullet points naturally
-            .replace(/^[-•]\s/gm, '<br>• ')
-            // Format numbered lists naturally
-            .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
-            // Format confidence indicators subtly
-            .replace(/\(Confidence: [\d.]+\)/g, '<span style="color: #059669; font-size: 0.9em; font-style: italic;">$&</span>')
             // Clean up multiple line breaks
             .replace(/(<br>){3,}/g, '<br><br>')
             // Remove leading <br> tags
@@ -491,6 +485,13 @@ class EnhancedNatureAI {
         const isCollapsed = this.sidePanel.classList.contains('collapsed');
         this.togglePanel.querySelector('i').className = isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
         
+        // Update header button state
+        if (isCollapsed) {
+            this.reasoningPanelBtn.classList.remove('active');
+        } else {
+            this.reasoningPanelBtn.classList.add('active');
+        }
+        
         // Save panel state to localStorage
         localStorage.setItem('enhancedNatureAI-sidePanelCollapsed', isCollapsed);
     }
@@ -500,6 +501,9 @@ class EnhancedNatureAI {
         if (isCollapsed) {
             this.sidePanel.classList.add('collapsed');
             this.togglePanel.querySelector('i').className = 'fas fa-chevron-left';
+            this.reasoningPanelBtn.classList.remove('active');
+        } else {
+            this.reasoningPanelBtn.classList.add('active');
         }
     }
 
@@ -524,35 +528,39 @@ class EnhancedNatureAI {
         let reasoning = null;
         let questions = [];
         
-        // Look for confidence indicators or reasoning patterns
-        const confidenceMatch = content.match(/\(Confidence: [\d.]+\)/g);
-        if (confidenceMatch) {
-            reasoning = `Based on the available information, I'm ${confidenceMatch[0].toLowerCase()}.`;
+        // Look for confidence indicators or reasoning patterns in natural language
+        const confidencePatterns = [
+            /I'm (?:fairly|quite|very|pretty) confident/gi,
+            /I'm not (?:entirely|completely) sure/gi,
+            /Based on (?:what I know|my knowledge)/gi,
+            /I believe this because/gi,
+            /This is likely because/gi
+        ];
+        
+        for (const pattern of confidencePatterns) {
+            const match = content.match(pattern);
+            if (match) {
+                reasoning = `The AI expressed confidence level: ${match[0]}`;
+                break;
+            }
         }
         
         // Look for sentences ending with "?" - these are likely follow-up questions
-        const questionMatches = content.match(/[^.!?]*\?/g);
-        if (questionMatches && questionMatches.length > 0) {
-            questions = questionMatches
-                .map(q => q.trim())
-                .filter(q => q.length > 10) // Filter out very short questions
-                .slice(-3); // Take the last 3 questions (most likely follow-ups)
-        }
+        const sentences = content.split(/[.!]/);
+        questions = sentences
+            .filter(sentence => sentence.trim().includes('?'))
+            .map(q => q.trim().replace(/^\s*[-•]\s*/, '')) // Remove bullet points
+            .filter(q => q.length > 15 && q.length < 200) // Filter reasonable question lengths
+            .slice(-3); // Take the last 3 questions (most likely follow-ups)
         
-        // If we found reasoning or questions, extract them from the main content
+        // Clean up questions
+        questions = questions.map(q => {
+            // Remove common question starters that might be redundant
+            return q.replace(/^(so|and|but|well|now|okay|alright),?\s*/i, '').trim();
+        }).filter(q => q.length > 0);
+        
+        // Main content is the full response - no need to modify it
         let mainContent = content;
-        if (reasoning || questions.length > 0) {
-            // Remove the questions from main content to keep it natural
-            questions.forEach(q => {
-                mainContent = mainContent.replace(q, '').trim();
-            });
-            
-            // Clean up the main content
-            mainContent = mainContent
-                .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
-                .replace(/^\s+|\s+$/g, '') // Trim whitespace
-                .replace(/\n+/g, '\n'); // Clean up line breaks
-        }
         
         return { reasoning, questions, mainContent };
     }
