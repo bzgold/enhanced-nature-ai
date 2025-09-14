@@ -81,7 +81,7 @@ class NatureAI {
     loadSettings() {
         const defaultSettings = {
             apiKey: '',
-            model: 'gpt-4.1-mini',
+            model: 'gpt-4o-mini',
             developerMessage: 'You are Nature AI, a friendly and knowledgeable AI assistant with a deep appreciation for nature, science, and human creativity. You help users explore ideas, solve problems, and engage in meaningful conversations. Always respond in a warm, helpful manner that reflects your connection to nature.',
             darkMode: false
         };
