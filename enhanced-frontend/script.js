@@ -17,6 +17,7 @@ class EnhancedNatureAI {
         this.checkFirstTimeUser();
         this.updateStatus();
         this.loadConversationFromHistory();
+        this.loadSidePanelState();
         this.startStatsTimer();
     }
 
@@ -371,8 +372,14 @@ class EnhancedNatureAI {
             });
 
             // Parse and update side panel with reasoning and questions
-            const { reasoning, questions } = this.parseMessageContent(botMessage);
+            const { reasoning, questions, mainContent } = this.parseMessageContent(botMessage);
             this.updateSidePanel(reasoning, questions);
+            
+            // Update the main message content to be natural
+            if (mainContent && mainContent !== botMessage) {
+                const formattedMainContent = this.formatEnhancedMessage(mainContent);
+                botMessageElement.querySelector('.message-content p').innerHTML = formattedMainContent;
+            }
 
             // Save conversation history
             this.saveConversationHistory();
@@ -434,24 +441,16 @@ class EnhancedNatureAI {
     }
 
     formatEnhancedMessage(content) {
-        // Remove reasoning and follow-up questions sections from main display
-        let cleanContent = content
-            .replace(/REASONING:?\s*[\s\S]*?(?=FOLLOW-UP QUESTIONS:|$)/gi, '')
-            .replace(/FOLLOW-UP QUESTIONS:?\s*[\s\S]*$/gi, '')
-            .trim();
-        
-        // Enhanced formatting for structured AI responses
-        let formatted = cleanContent
+        // Natural formatting for conversational AI responses
+        let formatted = content
             // Convert line breaks to <br>
             .replace(/\n/g, '<br>')
-            // Format headings (lines that are all caps or start with capital letters and end with :)
-            .replace(/^([A-Z][A-Z\s]+:?)$/gm, '<br><strong style="color: #059669; font-size: 1.1em; display: block; margin: 1rem 0 0.5rem 0;">$1</strong>')
-            // Format numbered lists
-            .replace(/^(\d+\.\s)/gm, '<br><strong style="color: #3b82f6;">$1</strong>')
-            // Format bullet points
-            .replace(/^[-•]\s/gm, '<br>• <span style="color: #059669;">')
-            // Format confidence indicators
-            .replace(/\(Confidence: [\d.]+\)/g, '<span style="color: #f59e0b; font-weight: 600;">$&</span>')
+            // Format bullet points naturally
+            .replace(/^[-•]\s/gm, '<br>• ')
+            // Format numbered lists naturally
+            .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
+            // Format confidence indicators subtly
+            .replace(/\(Confidence: [\d.]+\)/g, '<span style="color: #059669; font-size: 0.9em; font-style: italic;">$&</span>')
             // Clean up multiple line breaks
             .replace(/(<br>){3,}/g, '<br><br>')
             // Remove leading <br> tags
@@ -491,6 +490,17 @@ class EnhancedNatureAI {
         this.sidePanel.classList.toggle('collapsed');
         const isCollapsed = this.sidePanel.classList.contains('collapsed');
         this.togglePanel.querySelector('i').className = isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+        
+        // Save panel state to localStorage
+        localStorage.setItem('enhancedNatureAI-sidePanelCollapsed', isCollapsed);
+    }
+
+    loadSidePanelState() {
+        const isCollapsed = localStorage.getItem('enhancedNatureAI-sidePanelCollapsed') === 'true';
+        if (isCollapsed) {
+            this.sidePanel.classList.add('collapsed');
+            this.togglePanel.querySelector('i').className = 'fas fa-chevron-left';
+        }
     }
 
     updateSidePanel(reasoning, questions) {
@@ -510,26 +520,41 @@ class EnhancedNatureAI {
     }
 
     parseMessageContent(content) {
-        // Extract reasoning and follow-up questions from AI response
-        const reasoningMatch = content.match(/REASONING:?\s*([\s\S]*?)(?=FOLLOW-UP QUESTIONS:|$)/i);
-        const questionsMatch = content.match(/FOLLOW-UP QUESTIONS:?\s*([\s\S]*?)$/i);
-        
+        // Extract reasoning and follow-up questions from natural AI response
         let reasoning = null;
         let questions = [];
         
-        if (reasoningMatch) {
-            reasoning = reasoningMatch[1].trim();
+        // Look for confidence indicators or reasoning patterns
+        const confidenceMatch = content.match(/\(Confidence: [\d.]+\)/g);
+        if (confidenceMatch) {
+            reasoning = `Based on the available information, I'm ${confidenceMatch[0].toLowerCase()}.`;
         }
         
-        if (questionsMatch) {
-            const questionsText = questionsMatch[1].trim();
-            questions = questionsText
-                .split(/\n/)
-                .map(q => q.replace(/^\d+\.\s*/, '').replace(/^[-•]\s*/, '').trim())
-                .filter(q => q.length > 0 && q.includes('?'));
+        // Look for sentences ending with "?" - these are likely follow-up questions
+        const questionMatches = content.match(/[^.!?]*\?/g);
+        if (questionMatches && questionMatches.length > 0) {
+            questions = questionMatches
+                .map(q => q.trim())
+                .filter(q => q.length > 10) // Filter out very short questions
+                .slice(-3); // Take the last 3 questions (most likely follow-ups)
         }
         
-        return { reasoning, questions };
+        // If we found reasoning or questions, extract them from the main content
+        let mainContent = content;
+        if (reasoning || questions.length > 0) {
+            // Remove the questions from main content to keep it natural
+            questions.forEach(q => {
+                mainContent = mainContent.replace(q, '').trim();
+            });
+            
+            // Clean up the main content
+            mainContent = mainContent
+                .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
+                .replace(/^\s+|\s+$/g, '') // Trim whitespace
+                .replace(/\n+/g, '\n'); // Clean up line breaks
+        }
+        
+        return { reasoning, questions, mainContent };
     }
 
     showNotification(message, type = 'info') {

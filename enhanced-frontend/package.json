@@ -1,0 +1,24 @@
+{
+  "name": "nature-ai-enhanced-frontend",
+  "version": "2.0.0",
+  "description": "Enhanced Nature AI - Advanced Conversation Interface",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static build complete'",
+    "start": "echo 'Static site ready'"
+  },
+  "keywords": [
+    "ai",
+    "chatbot",
+    "nature-ai",
+    "enhanced",
+    "conversation",
+    "openai"
+  ],
+  "author": "Nature AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/The-AI-Engineer-Challenge"
+  }
+}

@@ -39,32 +39,26 @@ async def enhanced_chat(request: EnhancedChatRequest):
         # Initialize OpenAI client with the provided API key
         client = OpenAI(api_key=request.api_key)
         
-        # Enhanced system prompt with comprehensive guidelines
+        # Enhanced system prompt with natural conversation flow
         enhanced_system_prompt = f"""{request.developer_message}
 
 CRITICAL RESPONSE GUIDELINES:
-1. STRUCTURE: Always use clear headings, bullet points, and numbered steps
-2. FORMATTING: Use plain text only - NO markdown formatting
-3. UNCERTAINTY: If unsure, say "I don't know" or "I'm not certain about this"
-4. REASONING: Include your thought process and confidence level when appropriate
-5. ENGAGEMENT: ALWAYS end with 2-3 engaging follow-up questions
-6. MEMORY: Build upon previous conversation context
-7. CLARITY: Use clean, readable formatting with proper spacing
+1. NATURAL CONVERSATION: Respond naturally and conversationally, as if talking to a friend
+2. NO STRUCTURED HEADERS: Don't use formal headings like "HEADING:" or "KEY POINTS:"
+3. FORMATTING: Use plain text only - NO markdown formatting
+4. UNCERTAINTY: If unsure, say "I don't know" or "I'm not certain about this"
+5. MEMORY: Build upon previous conversation context naturally
+6. ENGAGEMENT: Keep responses engaging but conversational
 
 CONVERSATION CONTEXT: {request.conversation_history if request.conversation_history else "This is the start of our conversation."}
 
-RESPONSE STRUCTURE TEMPLATE:
-HEADING: [Main topic]
-• Key point 1
-• Key point 2
-• Key point 3
+RESPONSE FORMAT:
+- Write naturally and conversationally
+- Use bullet points or numbered lists when helpful, but without formal headers
+- Include your reasoning process and confidence level when appropriate
+- End with 2-3 engaging follow-up questions
 
-REASONING: [Your thought process and confidence level]
-
-FOLLOW-UP QUESTIONS:
-1. [Engaging question 1]
-2. [Engaging question 2]
-3. [Engaging question 3]"""
+IMPORTANT: Your response will be split into main content and analysis sections automatically. Focus on natural conversation flow."""
         
         # Build comprehensive message history
         messages = [{"role": "system", "content": enhanced_system_prompt}]

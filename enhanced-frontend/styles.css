@@ -275,10 +275,18 @@ body {
     font-size: 0.875rem;
     line-height: 1.6;
     color: var(--gray-600);
+    background: var(--gray-50);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
 }
 
 .analysis-content p {
     margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: var(--white);
+    border-radius: 6px;
+    border-left: 3px solid var(--primary-green);
 }
 
 .analysis-content .no-content {
@@ -286,6 +294,8 @@ body {
     font-style: italic;
     text-align: center;
     padding: 1rem;
+    background: transparent;
+    border: none;
 }
 
 .analysis-content strong {
@@ -711,10 +721,18 @@ small {
 
 .dark-mode .analysis-content {
     color: #d1d5db;
+    background: #374151;
+    border-color: #4b5563;
+}
+
+.dark-mode .analysis-content p {
+    background: #1f2937;
+    border-left-color: #059669;
 }
 
 .dark-mode .analysis-content .no-content {
     color: #6b7280;
+    background: transparent;
 }
 
 /* Responsive Design */
