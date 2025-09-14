@@ -645,9 +645,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         enhancedNatureAI.updateApiUrl('http://localhost:8001/api/chat');
     }
-    // For production deployment
+    // For production deployment - will be updated after backend deployment
     else {
-        enhancedNatureAI.updateApiUrl('https://your-enhanced-api.vercel.app/api/chat');
+        // Use localhost for now since Vercel has deployment protection
+        const apiUrl = 'http://localhost:8001/api/chat';
+        enhancedNatureAI.updateApiUrl(apiUrl);
     }
     
     // Make it globally accessible for debugging

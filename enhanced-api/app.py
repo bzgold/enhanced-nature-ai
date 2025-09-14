@@ -39,32 +39,28 @@ async def enhanced_chat(request: EnhancedChatRequest):
         # Initialize OpenAI client with the provided API key
         client = OpenAI(api_key=request.api_key)
         
-        # Enhanced system prompt with structured responses and separate analysis
+        # Enhanced system prompt for natural responses with separate analysis
         enhanced_system_prompt = f"""{request.developer_message}
 
 CRITICAL RESPONSE GUIDELINES:
-1. STRUCTURED RESPONSES: Use clear headings, bullet points, and numbered steps in main response
+1. MAIN RESPONSE: Write naturally and conversationally. Use bullet points ONLY where they genuinely make sense (like lists or steps). NO forced headings, supporting details sections, or conclusions.
 2. FORMATTING: Use plain text only - NO markdown formatting
 3. UNCERTAINTY: If unsure, say "I don't know" or "I'm not certain about this"
-4. MEMORY: Build upon previous conversation context
-5. ENGAGEMENT: Include structured content with clear organization
+4. MEMORY: Build upon previous conversation context naturally
+5. ANALYSIS SECTIONS: Always include separate reasoning and follow-up questions sections
 
 CONVERSATION CONTEXT: {request.conversation_history if request.conversation_history else "This is the start of our conversation."}
 
-RESPONSE STRUCTURE TEMPLATE:
-HEADING: [Main topic]
-• Key point 1
-• Key point 2
-• Key point 3
+RESPONSE FORMAT:
+[Write your main response naturally and conversationally. Use bullets only when listing items or steps makes genuine sense. Be helpful and informative but natural.]
 
-SUPPORTING DETAILS:
-• Additional information
-• Examples or explanations
+REASONING:
+[Explain your thought process, confidence level, and any assumptions you made]
 
-CONCLUSION:
-[Summary and next steps]
-
-IMPORTANT: Provide structured, organized responses in the main chat. The reasoning and follow-up questions will be handled separately in the analysis panel."""
+FOLLOW-UP QUESTIONS:
+1. [Engaging question 1]
+2. [Engaging question 2]
+3. [Engaging question 3]"""
         
         # Build comprehensive message history
         messages = [{"role": "system", "content": enhanced_system_prompt}]
@@ -82,9 +78,9 @@ IMPORTANT: Provide structured, organized responses in the main chat. The reasoni
         # Add current user message
         messages.append({"role": "user", "content": request.user_message})
         
-        # Create enhanced streaming response
-        async def generate_enhanced_response():
-            # Create streaming chat completion with optimized parameters
+        # Create an async generator function for streaming responses (matching original)
+        async def generate():
+            # Create streaming chat completion with enhanced parameters
             stream = client.chat.completions.create(
                 model=request.model,
                 messages=messages,
@@ -92,18 +88,16 @@ IMPORTANT: Provide structured, organized responses in the main chat. The reasoni
                 temperature=0.7,  # Balance creativity and accuracy
                 max_tokens=1200,  # Increased for more detailed responses
                 presence_penalty=0.1,  # Encourage diverse responses
-                frequency_penalty=0.1,  # Reduce repetition
-                top_p=0.9,  # Focus on most likely tokens
-                stop=None  # No early stopping
+                frequency_penalty=0.1   # Reduce repetition
             )
             
-            # Stream response with enhanced formatting
+            # Yield each chunk of the response as it becomes available
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     yield chunk.choices[0].delta.content
 
-        # Return enhanced streaming response
-        return StreamingResponse(generate_enhanced_response(), media_type="text/plain")
+        # Return a streaming response to the client
+        return StreamingResponse(generate(), media_type="text/plain")
     
     except Exception as e:
         # Enhanced error handling
