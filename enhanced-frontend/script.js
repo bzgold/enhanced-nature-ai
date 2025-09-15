@@ -334,7 +334,7 @@ class EnhancedNatureAI {
                 confidence_threshold: this.settings.confidenceThreshold
             };
 
-            // Make API request to enhanced backend
+            // Make API request to enhanced backend with better error handling
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: {
@@ -344,7 +344,14 @@ class EnhancedNatureAI {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                if (response.status === 422) {
+                    throw new Error(`API validation error: Please check your API key and try again`);
+                } else if (response.status === 500) {
+                    throw new Error(`Server error: ${errorText || 'Please check your API key and try again'}`);
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
             }
 
             // Handle streaming response
@@ -645,10 +652,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         enhancedNatureAI.updateApiUrl('http://localhost:8001/api/chat');
     }
-    // For production deployment - will be updated after backend deployment
+    // For production deployment - use the correct Vercel deployment URL
     else {
-        // Use localhost for now since Vercel has deployment protection
-        const apiUrl = 'http://localhost:8001/api/chat';
+        // Try to use the enhanced API endpoint, fallback to relative path
+        const apiUrl = 'https://enhanced-api-m3skopw3v-bhzbgold-2840s-projects.vercel.app/api/chat';
         enhancedNatureAI.updateApiUrl(apiUrl);
     }
     
