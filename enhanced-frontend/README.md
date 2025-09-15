@@ -56,6 +56,7 @@ Navigate to `http://localhost:3001`
 | Feature | Original Frontend | Enhanced Frontend |
 |---------|------------------|-------------------|
 | **Port** | 3000 | 3001 |
+
 | **API Endpoint** | localhost:8000 | localhost:8001 |
 | **Memory** | ❌ No persistence | ✅ Full conversation memory |
 | **Stats** | ❌ No tracking | ✅ Real-time statistics |
