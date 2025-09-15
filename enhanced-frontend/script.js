@@ -654,8 +654,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // For production deployment - use the correct Vercel deployment URL
     else {
-        // Try to use the enhanced API endpoint, fallback to relative path
-        const apiUrl = 'https://enhanced-api-m3skopw3v-bhzbgold-2840s-projects.vercel.app/api/chat';
+        // Use the deployed enhanced API endpoint
+        const apiUrl = 'https://enhanced-kbdmn03v9-bhzbgold-2840s-projects.vercel.app/api/chat';
         enhancedNatureAI.updateApiUrl(apiUrl);
     }
     
