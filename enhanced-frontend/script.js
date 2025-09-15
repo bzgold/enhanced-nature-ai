@@ -354,25 +354,50 @@ class EnhancedNatureAI {
                 }
             }
 
-            // Handle streaming response
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+            // Handle streaming response with fallback for compatibility
             let botMessage = '';
-
-            // Add bot message container
             const botMessageElement = this.addMessage('', 'bot', true);
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+            // Check if ReadableStream is supported (some browsers/private mode may not support it)
+            if (response.body && response.body.getReader) {
+                try {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
 
-                const chunk = decoder.decode(value);
-                botMessage += chunk;
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
 
-                // Update bot message content with enhanced formatting
+                        const chunk = decoder.decode(value);
+                        botMessage += chunk;
+
+                        // Update bot message content with enhanced formatting
+                        const formattedMessage = this.formatEnhancedMessage(botMessage);
+                        const messageElement = botMessageElement.querySelector('.message-content p');
+                        if (messageElement) {
+                            messageElement.innerHTML = formattedMessage;
+                            this.scrollToBottom();
+                        }
+                    }
+                } catch (streamError) {
+                    console.warn('Streaming failed, falling back to text response:', streamError);
+                    // Fallback to regular text response
+                    botMessage = await response.text();
+                    const formattedMessage = this.formatEnhancedMessage(botMessage);
+                    const messageElement = botMessageElement.querySelector('.message-content p');
+                    if (messageElement) {
+                        messageElement.innerHTML = formattedMessage;
+                    }
+                }
+            } else {
+                // Fallback for browsers that don't support streaming
+                console.warn('Browser does not support streaming, using fallback');
+                botMessage = await response.text();
                 const formattedMessage = this.formatEnhancedMessage(botMessage);
-                botMessageElement.querySelector('.message-content p').innerHTML = formattedMessage;
-                this.scrollToBottom();
+                const messageElement = botMessageElement.querySelector('.message-content p');
+                if (messageElement) {
+                    messageElement.innerHTML = formattedMessage;
+                }
             }
 
             // Add bot response to conversation history
@@ -402,10 +427,18 @@ class EnhancedNatureAI {
 
         } catch (error) {
             console.error('Error sending message:', error);
-            this.showNotification('Error connecting to Enhanced Nature AI. Please check your API key and try again.', 'error');
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                apiUrl: this.apiUrl,
+                userAgent: navigator.userAgent,
+                isPrivateMode: window.navigator.userAgent.includes('Private')
+            });
             
-            // Add error message to chat
-            this.addMessage('Sorry, I encountered an error. Please check your API key and try again. Enhanced Nature AI is designed to be more reliable and transparent.', 'bot');
+            this.showNotification(`Error: ${error.message}. Check console for details.`, 'error');
+            
+            // Add error message to chat with more details
+            this.addMessage(`Sorry, I encountered an error: ${error.message}. This might be due to browser compatibility or API connectivity issues. Please check your API key and try again.`, 'bot');
         } finally {
             this.setLoading(false);
         }
